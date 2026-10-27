@@ -1,0 +1,856 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SwiftCare · 24×7 ambulance booking demo</title>
+<meta name="description" content="SwiftCare: a demo ambulance booking app with bike responders, critical care and pet ambulances, a live city map and real-time tracking.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#FAF8F3; --card:#FFFFFF; --ink:#141B22; --muted:#56616B; --line:#E2DED5; --soft:#F1EEE6;
+  --red:#DE2A31; --red-dark:#B51C23; --onred:#FFFFFF; --hivis:#FFD23F; --onhivis:#1B1600;
+  --als:#DE2A31; --bls:#1F5FBF; --ccu:#7A2FD0; --pet:#D9730D; --bike:#141B22; --vet:#D9730D;
+  --land:#EFEBE1; --road:#FFFFFF; --river:#BFD6E6; --riverline:#9DBFD6; --maptext:#6B7480;
+  --ok:#1C7A43; --oksoft:#E1F3E8; --warn:#8A5A00; --warnsoft:#FCEFCF;
+  --shadow:0 1px 2px rgba(20,27,34,.06),0 10px 30px rgba(20,27,34,.08);
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --paper:#0F1418; --card:#161D23; --ink:#EEF1F3; --muted:#A3AEB8; --line:#28323B; --soft:#1D262E;
+    --red:#FF4B52; --red-dark:#FF6A70; --onred:#1A0506; --hivis:#FFD23F; --onhivis:#1B1600;
+    --als:#FF5A60; --bls:#5C9BFF; --ccu:#B48CFF; --pet:#FF9F45; --bike:#EEF1F3; --vet:#FF9F45;
+    --land:#1A2229; --road:#26313A; --river:#1B3446; --riverline:#24465E; --maptext:#8C98A3;
+    --ok:#6FD495; --oksoft:#173326; --warn:#F5C35C; --warnsoft:#3A2D10;
+    --shadow:none; color-scheme:dark;
+  }
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:Barlow,system-ui,-apple-system,"Segoe UI",sans-serif;font-size:17px;line-height:1.5}
+h1,h2,h3{font-family:"Barlow Condensed","Arial Narrow",Arial,sans-serif;line-height:1;margin:0;letter-spacing:-.005em}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--bls);outline-offset:2px}
+a{color:inherit}
+.wrap{max-width:1240px;margin:0 auto;padding:0 20px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* top */
+.notice{background:var(--ink);color:var(--paper);font-size:14px}
+.notice .wrap{display:flex;flex-wrap:wrap;gap:4px 16px;justify-content:space-between;padding-top:8px;padding-bottom:8px}
+.notice a{font-weight:700}
+header.top .wrap{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding-top:14px;padding-bottom:14px}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none}
+.brand b{font-family:"Barlow Condensed",Arial,sans-serif;font-size:30px;font-weight:800;letter-spacing:.01em}
+.roles{display:flex;gap:2px;border:1.5px solid var(--ink);border-radius:999px;padding:3px}
+.roles button{border:0;background:transparent;padding:7px 16px;border-radius:999px;cursor:pointer;font-weight:700;font-size:15px}
+.roles button[aria-selected="true"]{background:var(--ink);color:var(--paper)}
+.chequer{height:16px;background:repeating-conic-gradient(var(--red) 0 25%,var(--paper) 0 50%) 0 0/16px 16px}
+
+/* hero line */
+.intro{padding:28px 0 18px}
+.intro .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:16px 32px}
+.intro h1{font-size:clamp(40px,5.8vw,72px);font-weight:800;max-width:19ch}
+.intro h1 em{font-style:normal;color:var(--red)}
+.sos{display:flex;align-items:center;gap:14px;max-width:360px}
+.sos a{flex-shrink:0;display:inline-flex;align-items:center;gap:8px;background:var(--red);color:var(--onred);text-decoration:none;font-family:"Barlow Condensed",Arial,sans-serif;font-weight:800;font-size:26px;padding:10px 18px;border-radius:12px}
+.sos p{margin:0;font-size:15px;color:var(--muted)}
+
+/* app grid */
+.app{display:grid;grid-template-columns:minmax(0,400px) minmax(0,1fr);gap:20px;align-items:start}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow)}
+.side{display:flex;flex-direction:column;gap:16px}
+.form{padding:22px}
+.form h2{font-size:30px;font-weight:700}
+.hint{color:var(--muted);font-size:15px;margin:6px 0 0}
+label,.lbl{display:block;font-weight:600;font-size:15px;margin:16px 0 6px}
+select,input,textarea{width:100%;padding:11px 12px;border:1.5px solid var(--line);border-radius:10px;background:var(--paper)}
+select:focus,input:focus,textarea:focus{border-color:var(--ink)}
+.pins{display:grid;grid-template-columns:auto 1fr;gap:0 12px;align-items:center}
+.pins .dot{width:14px;height:14px;border-radius:50%;margin-top:22px}
+.pins .dot.p{background:var(--ink)}
+.pins .dot.h{background:var(--red);border-radius:3px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips input{position:absolute;opacity:0;width:1px;height:1px}
+.chips label{margin:0;display:inline-flex;align-items:center;gap:7px;border:1.5px solid var(--line);border-radius:999px;padding:7px 13px;cursor:pointer;font-size:15px;background:var(--paper)}
+.chips input:checked+label{border-color:var(--ink);background:var(--ink);color:var(--paper)}
+.chips input:focus-visible+label{outline:3px solid var(--bls);outline-offset:2px}
+.sw{width:10px;height:10px;border-radius:50%;display:inline-block}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.err{color:var(--red-dark);font-size:14px;font-weight:600;margin:8px 0 0}
+.err:empty{display:none}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:12px;padding:13px 18px;font-weight:700;cursor:pointer;background:var(--ink);color:var(--paper);font-size:16px}
+.btn.red{background:var(--red);color:var(--onred)}
+.btn.full{width:100%;margin-top:18px}
+.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+.btn.sm{padding:7px 12px;font-size:14px;border-radius:9px}
+
+/* map */
+.mapcard{padding:0;overflow:hidden;position:relative}
+.maphead{display:flex;flex-wrap:wrap;gap:8px 16px;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--line)}
+.maphead h2{font-size:24px;font-weight:700}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:14px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.map{display:block;width:100%;height:auto;background:var(--land);touch-action:manipulation}
+.map .area,.map .hosp{cursor:pointer}
+.map [tabindex]:focus{outline:none}
+.map .area:focus-visible circle,.map .hosp:focus-visible rect{stroke:var(--bls);stroke-width:4}
+.map text{font-family:Barlow,Arial,sans-serif;fill:var(--maptext);font-size:13px;font-weight:600;pointer-events:none}
+.map .area.on text,.map .hosp.on text{fill:var(--ink);font-weight:700}
+.route{fill:none;stroke:var(--red);stroke-width:4;stroke-linecap:round;stroke-dasharray:10 8;animation:dash 1.2s linear infinite}
+.approach{fill:none;stroke:var(--ink);stroke-width:2.5;stroke-dasharray:3 6;stroke-linecap:round;opacity:.7}
+@keyframes dash{to{stroke-dashoffset:-18}}
+@keyframes pulse{0%{r:10;opacity:.6}100%{r:26;opacity:0}}
+.pulse{animation:pulse 1.6s ease-out infinite}
+.vehicle{transition:opacity .2s}
+.vehicle.dim{opacity:.25}
+.vehicle.sel .ring{stroke:var(--hivis);stroke-width:4}
+.mapnote{margin:0;padding:10px 18px;border-top:1px solid var(--line);font-size:15px;color:var(--muted)}
+
+/* results */
+.results{padding:18px}
+.results .head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:8px}
+.results h2{font-size:26px;font-weight:700}
+.sort{display:flex;gap:8px;align-items:center;font-size:15px;color:var(--muted)}
+.sort select{width:auto;padding:6px 10px}
+.trip{color:var(--muted);margin:6px 0 0;font-size:15px}
+.list{display:flex;flex-direction:column;gap:10px;margin-top:14px}
+.q{display:grid;grid-template-columns:70px minmax(0,1fr);gap:14px;align-items:center;border:1.5px solid var(--line);border-radius:14px;padding:12px 14px;background:var(--paper);cursor:pointer;text-align:left;width:100%}
+.q:hover,.q.sel{border-color:var(--ink)}
+.eta{background:var(--hivis);color:var(--onhivis);border-radius:10px;text-align:center;padding:6px 4px;line-height:1}
+.eta b{display:block;font-family:"Barlow Condensed",Arial,sans-serif;font-size:32px;font-weight:800}
+.eta small{font-size:12px;font-weight:700}
+.q h3{font-family:Barlow,Arial,sans-serif;font-size:17px;font-weight:700;line-height:1.25;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.q .meta{color:var(--muted);font-size:14px;margin-top:2px}
+.q .kit{font-size:13px;color:var(--muted);margin-top:4px}
+.fare{grid-column:2;display:flex;align-items:baseline;gap:8px}
+.fare b{font-family:"Barlow Condensed",Arial,sans-serif;font-size:28px;font-weight:800}
+.fare span{font-size:13px;color:var(--muted)}
+.badge{font-family:Barlow,Arial,sans-serif;font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--oksoft);color:var(--ok)}
+.empty{text-align:center;color:var(--muted);padding:28px 10px}
+
+/* bookings */
+.section{margin-top:40px}
+.section h2{font-size:34px;font-weight:800}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;margin-top:16px}
+.bk{padding:18px}
+.bk .top{display:flex;justify-content:space-between;gap:10px;align-items:center}
+.bk h3{font-size:24px;font-weight:700}
+.bk p{margin:6px 0 0;color:var(--muted);font-size:15px}
+.live{margin-top:12px;font-weight:700;font-size:16px;color:var(--ink);display:flex;align-items:center;gap:8px}
+.live i{width:9px;height:9px;border-radius:50%;background:var(--red);animation:blink 1s infinite}
+@keyframes blink{50%{opacity:.25}}
+.status{font-size:13px;font-weight:700;padding:3px 10px;border-radius:999px;white-space:nowrap}
+.s-Requested{background:var(--warnsoft);color:var(--warn)}
+.s-Assigned,.s-On-the-way{background:var(--ink);color:var(--paper)}
+.s-Completed{background:var(--oksoft);color:var(--ok)}
+.s-Cancelled{background:var(--soft);color:var(--muted)}
+.track{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:14px}
+.track div{font-size:12px;color:var(--muted);padding-top:8px;border-top:5px solid var(--soft)}
+.track div.on{border-top-color:var(--red);color:var(--ink);font-weight:600}
+.bk .acts{display:flex;gap:8px;margin-top:14px}
+
+/* dialog */
+dialog{border:0;border-radius:18px;padding:0;max-width:520px;width:calc(100% - 28px);background:var(--card);color:var(--ink)}
+dialog::backdrop{background:rgba(10,14,18,.6)}
+.dlg{padding:0}
+.dlg .chequer{height:12px;background-size:12px 12px}
+.dlg .in{padding:22px}
+.dlg h2{font-size:32px;font-weight:800}
+.sum{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;margin:14px 0 4px;font-size:16px}
+.sum dt{color:var(--muted)}
+.sum dd{margin:0;font-weight:600}
+.dlg .acts{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:16px}
+
+/* ops */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-top:16px}
+.kpi{padding:16px 18px}
+.kpi span{color:var(--muted);font-size:14px;font-weight:600}
+.kpi b{display:block;font-family:"Barlow Condensed",Arial,sans-serif;font-size:44px;font-weight:800;line-height:1.05}
+.opsgrid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:16px;margin-top:16px;align-items:start}
+.tbl{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:15px;min-width:640px}
+th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-size:13px;color:var(--muted);font-weight:600}
+td small{color:var(--muted)}
+td select{width:auto;padding:6px 8px}
+.fleet{display:flex;flex-direction:column}
+.fl{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line)}
+.fl:last-child{border-bottom:0}
+.fl b{display:flex;align-items:center;gap:8px}
+.fl small{color:var(--muted)}
+.switch{display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer;margin:0;font-weight:600;white-space:nowrap}
+.switch input{width:18px;height:18px;accent-color:var(--ink)}
+.toolbar{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:flex-end}
+
+footer{margin-top:56px}
+footer .wrap{display:flex;flex-wrap:wrap;gap:8px 24px;justify-content:space-between;padding-top:20px;padding-bottom:28px;color:var(--muted);font-size:15px}
+
+.toast{position:fixed;left:50%;bottom:20px;transform:translate(-50%,10px);background:var(--ink);color:var(--paper);padding:12px 18px;border-radius:12px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:10}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+@media (max-width:960px){.app,.opsgrid{grid-template-columns:1fr}.mapcol{order:-1}.side{order:-2}}
+@media (max-width:520px){.row{grid-template-columns:1fr}.roles button{padding:7px 11px}}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.route,.pulse,.live i{animation:none}*{transition:none!important}}
+
+/* services strip */
+.services{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-top:22px}
+.svc{display:flex;flex-direction:column;gap:6px;text-align:left;border:1.5px solid var(--line);background:var(--card);border-radius:16px;padding:14px;cursor:pointer}
+.svc:hover,.svc[aria-pressed="true"]{border-color:var(--ink)}
+.svc[aria-pressed="true"]{box-shadow:inset 0 0 0 1.5px var(--ink)}
+.svc .ic{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;color:#fff}
+.svc b{font-family:"Barlow Condensed",Arial,sans-serif;font-size:22px;font-weight:700;line-height:1.05}
+.svc span{font-size:14px;color:var(--muted);line-height:1.35}
+.svc em{font-style:normal;font-size:14px;font-weight:700;margin-top:auto}
+.h247{display:inline-flex;align-items:center;gap:6px;background:var(--hivis);color:var(--onhivis);font-weight:800;font-family:"Barlow Condensed",Arial,sans-serif;font-size:20px;padding:2px 10px;border-radius:8px;vertical-align:middle}
+.addon{margin-top:12px;border:1.5px dashed var(--ink);border-radius:14px;padding:12px 14px;display:flex;gap:12px;align-items:flex-start}
+.addon input{width:20px;height:20px;margin-top:2px;accent-color:var(--ink);flex-shrink:0}
+.addon label{margin:0;font-weight:700}
+.addon p{margin:2px 0 0;font-size:14px;color:var(--muted)}
+fieldset{border:0;padding:0;margin:0}
+.dot.v{background:var(--vet);border-radius:3px}
+@media (max-width:1100px){.services{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:620px){.services{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* hospital & vet cards */
+.place{overflow:hidden;display:flex;flex-direction:column}
+.place .art{display:block;width:100%;height:auto;border-bottom:1px solid var(--line)}
+.place .pin{padding:16px 18px;display:flex;flex-direction:column;gap:2px;flex:1}
+.place .ptop{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.place h3{font-size:24px;font-weight:700}
+.place p{margin:6px 0 0;color:var(--muted);font-size:15px}
+.place .parea strong{color:var(--red-dark)}
+.pstats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0 4px}
+.pstats div{background:var(--soft);border-radius:10px;padding:8px 10px}
+.pstats dt{font-size:12px;color:var(--muted);font-weight:600}
+.pstats dd{margin:0;font-weight:700;font-size:15px}
+.ptags{display:flex;flex-wrap:wrap;gap:6px}
+.tag{font-size:13px;padding:3px 9px;border-radius:999px;background:var(--soft);color:var(--ink)}
+.pphone{font-weight:600;color:var(--ink)!important}
+.pphone span{font-weight:400;color:var(--muted)}
+.place .btn{margin-top:auto;align-self:flex-start;margin-top:12px}
+.place.sel{border-color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--ink)}
+.place.compact h3{font-size:20px}
+#destInfo .place{margin-top:14px;box-shadow:none}
+#destInfo .art{max-height:110px;object-fit:cover}
+.hgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;margin-top:16px;align-items:start}
+.cards.one{grid-template-columns:1fr}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-top:14px}
+@media (max-width:960px){.hgrid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div class="notice" role="note"><div class="wrap">
+  <span><strong>Demo project.</strong> No real ambulance is sent. Operators, hospitals and vet clinics are fictional.</span>
+  <span>Real emergency in India? Call <a href="tel:108">108</a>.</span>
+</div></div>
+
+<header class="top"><div class="wrap">
+  <a class="brand" href="#book" aria-label="SwiftCare home">
+    <svg width="38" height="38" viewBox="0 0 38 38" aria-hidden="true"><rect width="38" height="38" rx="10" fill="var(--red)"/><path d="M16 8h6v8h8v6h-8v8h-6v-8H8v-6h8z" fill="#fff"/></svg>
+    <b>SwiftCare</b>
+  </a>
+  <div class="roles" role="tablist" aria-label="Choose a view">
+    <button role="tab" id="tab-book" aria-selected="true" aria-controls="view-book" data-view="book">Book</button>
+    <button role="tab" id="tab-hospital" aria-selected="false" aria-controls="view-hospital" data-view="hospital">Hospital &amp; vet</button>
+    <button role="tab" id="tab-ops" aria-selected="false" aria-controls="view-ops" data-view="ops">Operator</button>
+  </div>
+</div></header>
+<div class="chequer" aria-hidden="true"></div>
+
+<main>
+<section id="view-book" role="tabpanel" aria-labelledby="tab-book">
+  <div class="intro"><div class="wrap">
+    <div>
+      <h1>The right ambulance for every emergency. <em>Watch it come to you.</em></h1>
+      <p class="trip" style="margin-top:12px;font-size:17px"><span class="h247">24×7</span>&nbsp; Bike responders, critical care and even pet ambulances, all on one live map.</p>
+    </div>
+    <div class="sos">
+      <a href="tel:108"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1A17 17 0 0 1 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.2.2 2.4.6 3.6.1.3 0 .7-.2 1z"/></svg>108</a>
+      <p>If a life is at risk, call India's free ambulance line first. Don't wait to book online.</p>
+    </div>
+  </div>
+  <div class="wrap"><div class="services" id="services" aria-label="Our services"></div></div>
+  </div>
+
+  <div class="wrap app">
+    <div class="side">
+      <form class="card form" id="tripForm" novalidate>
+        <h2>Where to?</h2>
+        <p class="hint">Pick from the lists, or tap places on the map.</p>
+        <span class="lbl" id="typeLbl">Service</span>
+        <div class="chips" role="radiogroup" aria-labelledby="typeLbl" id="typeChips"></div>
+        <div class="pins">
+          <span class="dot p" aria-hidden="true"></span>
+          <div><label for="pickup" id="pickLbl">Patient's location</label><select id="pickup"></select></div>
+          <span class="dot h" id="destDot" aria-hidden="true"></span>
+          <div><label for="dest" id="destLbl">Hospital</label><select id="dest"></select></div>
+        </div>
+        <div id="destInfo"></div>
+        <span class="lbl" id="whenLbl">When</span>
+        <div class="chips" role="radiogroup" aria-labelledby="whenLbl">
+          <input type="radio" name="when" id="wNow" value="now" checked><label for="wNow">Now</label>
+          <input type="radio" name="when" id="wLater" value="later"><label for="wLater">Schedule</label>
+        </div>
+        <div id="laterBox" hidden><label for="whenAt">Date and time</label><input type="datetime-local" id="whenAt"></div>
+        <p class="err" id="formErr" role="alert"></p>
+        <button class="btn red full" type="submit">Find ambulances</button>
+      </form>
+
+      <div class="card results" id="results" hidden aria-live="polite">
+        <div class="head">
+          <h2 id="resTitle">Ambulances</h2>
+          <div class="sort"><label for="sortBy" style="margin:0;font-weight:500">Sort</label>
+            <select id="sortBy"><option value="eta">Fastest</option><option value="fare">Cheapest</option><option value="rating">Top rated</option></select></div>
+        </div>
+        <p class="trip" id="tripLine"></p>
+        <button class="btn ghost sm" type="button" id="changeTrip" style="margin-top:10px">Change trip</button>
+        <div id="bikeBox"></div>
+        <div class="list" id="qList"></div>
+      </div>
+    </div>
+
+    <div class="mapcol">
+      <div class="card mapcard">
+        <div class="maphead">
+          <h2>Live city map</h2>
+          <div class="legend" aria-hidden="true" id="legend"></div>
+        </div>
+        <div id="mapBook"></div>
+        <p class="mapnote" id="mapNote">Tap an area to set the patient's location.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap section">
+    <h2>My bookings</h2>
+    <div class="cards" id="mine"></div>
+  </div>
+</section>
+
+<section id="view-hospital" role="tabpanel" aria-labelledby="tab-hospital" hidden>
+  <div class="wrap section" style="margin-top:28px">
+    <div class="toolbar">
+      <div><h2>Hospitals &amp; vet clinics</h2><p class="trip">Every emergency desk sees which ambulances are on the way, so a bed and team are ready before arrival.</p></div>
+      <div class="sort"><label for="hospSel" style="margin:0;font-weight:500">Showing</label><select id="hospSel"></select></div>
+    </div>
+    <div class="hgrid">
+      <div id="placeDetail"></div>
+      <div><h2 style="font-size:28px" id="incTitle">Incoming arrivals</h2><div class="cards one" id="incoming"></div></div>
+    </div>
+    <h2 style="margin-top:36px;font-size:28px">All hospitals</h2>
+    <div class="pgrid" id="hospDir"></div>
+    <h2 style="margin-top:36px;font-size:28px">All vet clinics</h2>
+    <div class="pgrid" id="vetDir"></div>
+  </div>
+</section>
+
+<section id="view-ops" role="tabpanel" aria-labelledby="tab-ops" hidden>
+  <div class="wrap section" style="margin-top:28px">
+    <div class="toolbar">
+      <h2>Operator dashboard</h2>
+      <button class="btn ghost sm" id="resetBtn" type="button">Reset demo data</button>
+    </div>
+    <div class="kpis" id="kpis"></div>
+    <div class="opsgrid">
+      <div class="card mapcard"><div class="maphead"><h2>Fleet map</h2></div><div id="mapOps"></div></div>
+      <div class="card"><div class="maphead"><h2>Fleet</h2></div><div class="fleet" id="fleet"></div></div>
+    </div>
+    <h2 style="margin-top:32px;font-size:28px">All bookings</h2>
+    <div class="card tbl" style="margin-top:14px">
+      <table><thead><tr><th scope="col">Booking</th><th scope="col">Patient</th><th scope="col">Route</th><th scope="col">Vehicle</th><th scope="col">Fare</th><th scope="col">Status</th></tr></thead>
+      <tbody id="rows"></tbody></table>
+    </div>
+  </div>
+</section>
+</main>
+
+<dialog id="dlg" aria-labelledby="dlgT">
+  <form class="dlg" id="dlgForm" novalidate>
+    <div class="chequer" aria-hidden="true"></div>
+    <div class="in">
+      <h2 id="dlgT">Confirm booking</h2>
+      <dl class="sum" id="dlgSum"></dl>
+      <label for="pName" id="nameLbl">Patient name</label><input id="pName" autocomplete="name" maxlength="60">
+      <div class="row">
+        <div><label for="pPhone">Contact number</label><input id="pPhone" inputmode="numeric" autocomplete="tel" maxlength="10" placeholder="10-digit mobile"></div>
+        <fieldset id="humanFields"><label for="pCond">Condition</label><select id="pCond"><option>Stable</option><option>Serious</option><option>Critical</option><option>Not sure</option></select></fieldset>
+      </div>
+      <fieldset id="petFields" hidden>
+        <div class="row">
+          <div><label for="petType">Animal</label><select id="petType"><option>Dog</option><option>Cat</option><option>Bird</option><option>Rabbit</option><option>Other</option></select></div>
+          <div><label for="petSize">Size</label><select id="petSize"><option>Small</option><option>Medium</option><option>Large</option></select></div>
+        </div>
+      </fieldset>
+      <label for="pNote">Note for the crew <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
+      <textarea id="pNote" maxlength="200" rows="2" placeholder="For example: 3rd floor, no lift"></textarea>
+      <p class="err" id="dlgErr" role="alert"></p>
+      <div class="acts"><button class="btn ghost" type="button" id="dlgBack">Back</button><button class="btn red" type="submit">Confirm booking</button></div>
+    </div>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<footer><div class="chequer" aria-hidden="true"></div><div class="wrap">
+  <span>SwiftCare · Built by Dibyanshi Poddar · My BCA project idea, rebuilt from scratch in 2026</span>
+  <span>The demo runs fast: one map minute is about one real second. Data stays in your browser.</span>
+</div></footer>
+
+<script>
+/* ===== Reference data (all fictional) ===== */
+const AREAS=[
+ {id:"esplanade",name:"Esplanade",x:1,y:1},{id:"parkst",name:"Park Street",x:2.2,y:-0.6},
+ {id:"saltlake",name:"Salt Lake",x:8,y:5.5},{id:"newtown",name:"New Town",x:12.5,y:7.5},
+ {id:"dumdum",name:"Dum Dum",x:4,y:9.5},{id:"howrah",name:"Howrah",x:-4,y:1.5},
+ {id:"ballygunge",name:"Ballygunge",x:3.5,y:-3},{id:"behala",name:"Behala",x:-1.5,y:-7},
+ {id:"jadavpur",name:"Jadavpur",x:4,y:-6.5},{id:"garia",name:"Garia",x:6,y:-9.5}];
+const HOSPITALS=[
+ {id:"citygen",name:"City General Hospital",map:"City General",x:0.4,y:-1.6,lab:"b",area:"Near Park Street",about:"A large government-style general hospital with the busiest emergency department in central Kolkata.",
+  specialties:["Trauma & emergency","General surgery","Orthopaedics","Burns unit"],beds:620,icu:24,wait:25,rating:4.1,phone:"033 0000 0101",facilities:["Blood bank","CT scan","24×7 pharmacy"],art:{floors:6,wings:2,tone:"#DDE6EE",band:"#1F5FBF"}},
+ {id:"eastside",name:"Eastside Heart Institute",map:"Eastside Heart",x:9.6,y:3.8,lab:"b",area:"Salt Lake",about:"A specialist cardiac centre known for fast heart-attack care, with a cath lab ready around the clock.",
+  specialties:["Cardiology","Cardiac surgery","Cath lab","Stroke care"],beds:280,icu:30,wait:10,rating:4.7,phone:"033 0000 0202",facilities:["Cath lab 24×7","MRI","Helipad"],art:{floors:5,wings:1,tone:"#F3E3E3",band:"#DE2A31"}},
+ {id:"riverside",name:"Riverside Medical College",map:"Riverside Medical",x:-3.6,y:4,lab:"t",area:"Howrah",about:"A teaching hospital across the river with strong neurology and paediatric departments.",
+  specialties:["Neurology","Paediatrics","Maternity","General medicine"],beds:900,icu:36,wait:30,rating:4.0,phone:"033 0000 0303",facilities:["Neonatal ICU","Blood bank","Dialysis"],art:{floors:4,wings:2,tone:"#E8E2D3",band:"#0E8A6A"}},
+ {id:"southpoint",name:"Southpoint Multispeciality",map:"Southpoint",x:2.2,y:-5.4,lab:"b",area:"Near Jadavpur",about:"A private multispeciality hospital serving south Kolkata, with a dedicated trauma bay and short waits.",
+  specialties:["Multispeciality","Oncology","Kidney care","Orthopaedics"],beds:350,icu:20,wait:15,rating:4.4,phone:"033 0000 0404",facilities:["PET-CT","Dialysis","Day surgery"],art:{floors:7,wings:0,tone:"#E3E9F5",band:"#7A2FD0"}},
+ {id:"ntcare",name:"NewTown Care Hospital",map:"NewTown Care",x:12.2,y:10,lab:"l",area:"New Town",about:"A newer hospital in New Town with modern ICUs and a dedicated mother-and-child wing.",
+  specialties:["Critical care","Maternity","Paediatrics","General surgery"],beds:240,icu:28,wait:12,rating:4.5,phone:"033 0000 0505",facilities:["Modular ICU","NICU","Robotic surgery"],art:{floors:5,wings:2,tone:"#DFF0EA",band:"#0E8A6A"}}];
+const VETS=[
+ {id:"pawsfirst",name:"PawsFirst Vet Clinic",map:"PawsFirst Vet",x:6,y:2,lab:"b",area:"Near Salt Lake",about:"A busy neighbourhood clinic that handles emergencies day and night.",
+  specialties:["Dogs","Cats","Small animals"],hours:"Open 24×7",wait:10,rating:4.8,phone:"033 0000 0606",facilities:["X-ray","Pet ICU","Pharmacy"],art:{floors:2,wings:1,tone:"#FBEBD8",band:"#D9730D"}},
+ {id:"southvet",name:"Southside Animal Hospital",map:"Southside Animal",x:1,y:-8.6,lab:"b",area:"Behala",about:"A full animal hospital with surgery, imaging and boarding for recovering pets.",
+  specialties:["Dogs","Cats","Birds","Rabbits"],hours:"Open 24×7",wait:20,rating:4.6,phone:"033 0000 0707",facilities:["Surgery","Ultrasound","Boarding"],art:{floors:3,wings:2,tone:"#F4E6D0",band:"#D9730D"}},
+ {id:"northpaws",name:"Northpaws Vet Centre",map:"Northpaws Vet",x:7.5,y:9,lab:"b",area:"Near Dum Dum",about:"A friendly vet centre for routine and urgent care, with late evening hours.",
+  specialties:["Dogs","Cats","Exotic pets"],hours:"8am–11pm",wait:15,rating:4.5,phone:"033 0000 0808",facilities:["Lab tests","Dental care","Vaccination"],art:{floors:2,wings:0,tone:"#EFE7DA",band:"#D9730D"}}];
+const TYPES={
+ BIKE:{name:"Bike first responder",short:"Bike",color:"var(--bike)"},
+ BLS:{name:"Basic Life Support",short:"Basic",color:"var(--bls)"},
+ ALS:{name:"Advanced Life Support",short:"Advanced",color:"var(--als)"},
+ CCU:{name:"Critical Care (ICU)",short:"Critical care",color:"var(--ccu)"},
+ PET:{name:"Pet Ambulance",short:"Pet",color:"var(--pet)"}};
+const HUMAN=["BLS","ALS","CCU"];
+const SERVICES=[
+ {k:"BIKE",title:"Bike responder",text:"A paramedic on a motorbike beats traffic and starts first aid early.",from:"+₹299 add-on"},
+ {k:"BLS",title:"Basic",text:"Oxygen, stretcher and a trained attendant for stable patients.",from:"from ₹600"},
+ {k:"ALS",title:"Advanced",text:"Ventilator, cardiac monitor and a paramedic for serious cases.",from:"from ₹1,650"},
+ {k:"CCU",title:"Critical care",text:"An ICU on wheels with a doctor, for critical patients and transfers.",from:"from ₹3,200"},
+ {k:"PET",title:"Pet ambulance",text:"Gentle transport for dogs, cats and other pets to a vet clinic.",from:"from ₹900"}];
+const BIKE_FARE=299;
+const SEED_FLEET=[
+ {id:"A1",operator:"Rapid Response Ambulance Co.",reg:"WB 02 AB 1101",type:"ALS",x:2.6,y:1.6,base:1800,perKm:45,rating:4.8,kit:"Ventilator · Cardiac monitor · Paramedic",available:true},
+ {id:"A2",operator:"CityCare Ambulances",reg:"WB 04 CD 2210",type:"BLS",x:6.6,y:4.4,base:650,perKm:24,rating:4.6,kit:"Oxygen · Stretcher · First aid",available:true},
+ {id:"A3",operator:"LifeLine Medical Transport",reg:"WB 06 EF 3320",type:"ALS",x:-2.5,y:-4.6,base:1650,perKm:48,rating:4.5,kit:"Ventilator · Defibrillator · Paramedic",available:true},
+ {id:"A4",operator:"Green Cross Ambulance",reg:"WB 02 GH 4401",type:"BLS",x:4.8,y:-3.8,base:600,perKm:25,rating:4.4,kit:"Oxygen · Stretcher · Wheelchair",available:true},
+ {id:"A6",operator:"CityCare Ambulances",reg:"WB 04 KL 6620",type:"BLS",x:-3,y:-0.6,base:650,perKm:24,rating:4.6,kit:"Oxygen · Stretcher · First aid",available:true},
+ {id:"A9",operator:"Green Cross Ambulance",reg:"WB 02 QR 9902",type:"BLS",x:3,y:7.6,base:600,perKm:25,rating:4.5,kit:"Oxygen · Stretcher · First aid",available:false},
+ {id:"C1",operator:"MetroMed ICU on Wheels",reg:"WB 06 MN 7730",type:"CCU",x:13,y:5.6,base:3400,perKm:65,rating:4.9,kit:"ICU bed · Ventilator · Doctor on board",available:true},
+ {id:"C2",operator:"CriticalLink ICU Transfers",reg:"WB 02 ST 1288",type:"CCU",x:-0.2,y:-2.9,base:3200,perKm:68,rating:4.7,kit:"ICU bed · Infusion pumps · Doctor on board",available:true},
+ {id:"P1",operator:"PawsOnWheels Pet Ambulance",reg:"WB 08 PW 3311",type:"PET",x:6.6,y:1,base:900,perKm:30,rating:4.8,kit:"Pet stretcher · Oxygen · Vet assistant",available:true},
+ {id:"P2",operator:"PawsOnWheels Pet Ambulance",reg:"WB 08 PW 3312",type:"PET",x:0.6,y:-7.6,base:900,perKm:30,rating:4.6,kit:"Pet crate · First aid · Vet assistant",available:true},
+ {id:"B1",operator:"SwiftCare Bike Responders",reg:"WB 01 BK 0101",type:"BIKE",x:2,y:0.3,base:BIKE_FARE,perKm:0,rating:4.9,kit:"Defibrillator · Oxygen · First aid",available:true},
+ {id:"B2",operator:"SwiftCare Bike Responders",reg:"WB 01 BK 0102",type:"BIKE",x:7.4,y:6.8,base:BIKE_FARE,perKm:0,rating:4.8,kit:"Defibrillator · Oxygen · First aid",available:true},
+ {id:"B3",operator:"SwiftCare Bike Responders",reg:"WB 01 BK 0103",type:"BIKE",x:3.8,y:-5.2,base:BIKE_FARE,perKm:0,rating:4.8,kit:"Defibrillator · Oxygen · First aid",available:true}];
+const STATUSES=["Requested","Assigned","On the way","Completed"];
+const ACTIVE=["Requested","Assigned","On the way"];
+const KEY="swiftcare-demo-v3";
+const SPEED=1000; // ms of real time per map minute
+
+/* ===== Helpers ===== */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const rupees=n=>"₹"+Math.round(n).toLocaleString("en-IN");
+const km=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y)*1.35+0.6;
+const mins=k=>Math.max(3,Math.round(k*2.1+2));          // about 28 km/h in city traffic
+const bikeMins=k=>Math.max(2,Math.round(k*1.3+1));      // bikes move faster through traffic
+const area=id=>AREAS.find(a=>a.id===id);
+const placeOf=(kind,id)=>(kind==="vet"?VETS:HOSPITALS).find(h=>h.id===id);
+const dest=b=>placeOf(b.destKind,b.dest);
+const fmt=iso=>new Date(iso).toLocaleString("en-IN",{day:"numeric",month:"short",hour:"numeric",minute:"2-digit"});
+const P=(x,y)=>[Math.round((x+6.5)*32),Math.round((11.5-y)*22)];   // map units -> SVG pixels
+const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+const lerp=(a,b,t)=>({x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t});
+function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("show");clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove("show"),2800)}
+
+/* ===== State, saved in this browser only ===== */
+function seed(){
+  const now=Date.now(),fleet=SEED_FLEET.map(a=>({...a}));
+  const mk=(id,ago,patient,cond,pick,kind,d,amb,status)=>{const a=fleet.find(f=>f.id===amb),p=area(pick),k=km(p,placeOf(kind,d));
+    return {id,created:new Date(now-ago*60000).toISOString(),patient,phone:"9000000000",condition:cond,note:"",pickup:pick,destKind:kind,dest:d,type:a.type,amb,km:+k.toFixed(1),fare:Math.round(a.base+a.perKm*k),eta:mins(km(a,p)),when:"now",status,anim:null,bike:null,pet:null}};
+  const b=[mk("SC-4821",8,"Demo Patient A","Serious","saltlake","hosp","eastside","A2","On the way"),
+           mk("SC-4817",30,"Demo Patient B","Stable","ballygunge","hosp","southpoint","A4","Assigned"),
+           mk("SC-4790",240,"Demo Patient C","Critical","howrah","hosp","riverside","A3","Completed"),
+           mk("SC-4772",400,"Demo Owner D","","esplanade","vet","pawsfirst","P1","Completed")];
+  b[3].pet={animal:"Dog",size:"Large"};
+  b[0].anim={t0:now,from:{x:6.6,y:4.4},d0:0,d1:1,d2:mins(km(area("saltlake"),placeOf("hosp","eastside")))*SPEED*1.6};
+  b[1].anim={t0:now,from:{x:4.8,y:-3.8},d0:0,d1:mins(km({x:4.8,y:-3.8},area("ballygunge")))*SPEED*1.6,d2:mins(km(area("ballygunge"),placeOf("hosp","southpoint")))*SPEED*1.6};
+  return {fleet,bookings:b,mine:[]};
+}
+function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&s.fleet&&s.bookings)return s}catch(e){}return seed()}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}}
+let state=load();
+
+/* ===== Who is busy, and where is everyone ===== */
+function bikeDone(b,now){
+  if(b.anim) return now-b.anim.t0 >= b.anim.d0+b.anim.d1;
+  return !["Requested","Assigned"].includes(b.status);
+}
+function tripFor(id,now=Date.now()){
+  return state.bookings.find(b=>ACTIVE.includes(b.status)&&(b.amb===id||(b.bike&&b.bike.amb===id&&!bikeDone(b,now))));
+}
+function posOf(a,now){
+  const b=tripFor(a.id,now);
+  if(!b||!b.anim) return {x:a.x,y:a.y};
+  const t=now-b.anim.t0,p=area(b.pickup),{d0,d1,d2,from}=b.anim;
+  if(b.bike&&b.bike.amb===a.id){const bf=b.bike.from,bd=b.bike.d1;
+    if(t<d0)return bf; if(t<d0+bd)return lerp(bf,p,(t-d0)/bd); return {x:p.x,y:p.y};}
+  const h=dest(b);
+  if(t<d0)return from;
+  if(t<d0+d1)return lerp(from,p,(t-d0)/d1);
+  if(t<d0+d1+d2)return lerp(p,h,(t-d0-d1)/d2);
+  return {x:h.x,y:h.y};
+}
+function freeze(id){const a=state.fleet.find(f=>f.id===id);if(!a)return;const q=posOf(a,Date.now());a.x=q.x;a.y=q.y;}
+
+/* ===== Pictures and detail cards for hospitals and vet clinics ===== */
+function placeArt(h,kind){
+  // A simple illustrated building, different for each place, drawn in SVG (no photos needed)
+  const a=h.art,W=320,G=126,fh=12,bw=96+a.floors*4,bh=a.floors*fh+16,bx=(W-bw)/2,by=G-bh;
+  let s=`<rect width="${W}" height="150" fill="var(--soft)"/><circle cx="${40+a.floors*30}" cy="34" r="16" fill="var(--hivis)" opacity=".55"/>`;
+  s+=`<rect y="${G}" width="${W}" height="${150-G}" fill="var(--land)"/><rect y="${G+12}" width="${W}" height="10" fill="var(--road)"/>`;
+  const wing=(x,w,fl)=>{const hh=fl*fh+10,yy=G-hh;let r=`<rect x="${x}" y="${yy}" width="${w}" height="${hh}" fill="${a.tone}" stroke="var(--ink)" stroke-opacity=".25"/>`;
+    for(let f=0;f<fl;f++)for(let c=8;c<w-8;c+=14)r+=`<rect x="${x+c}" y="${yy+6+f*fh}" width="8" height="7" rx="1" fill="#8FB3CF"/>`;return r;};
+  if(a.wings>=1)s+=wing(bx-58,62,Math.max(2,a.floors-2));
+  if(a.wings>=2)s+=wing(bx+bw-4,62,Math.max(2,a.floors-3));
+  s+=`<rect x="${bx}" y="${by}" width="${bw}" height="${bh}" fill="${a.tone}" stroke="var(--ink)" stroke-opacity=".3"/><rect x="${bx}" y="${by}" width="${bw}" height="6" fill="${a.band}"/>`;
+  for(let f=0;f<a.floors;f++)for(let c=10;c<bw-10;c+=16)s+=`<rect x="${bx+c}" y="${by+12+f*fh}" width="9" height="8" rx="1" fill="#8FB3CF"/>`;
+  const cx=W/2;
+  s+=`<rect x="${cx-16}" y="${G-22}" width="32" height="22" fill="var(--ink)" opacity=".85"/><rect x="${cx-34}" y="${G-26}" width="68" height="5" fill="${a.band}"/>`;
+  s+=kind==="vet"?`<g transform="translate(${cx} ${by-14})"><circle r="13" fill="var(--vet)"/><g fill="#fff" transform="translate(0 1) scale(1.3)">${PAW}</g></g>`
+                 :`<g transform="translate(${cx} ${by-14})"><rect x="-13" y="-13" width="26" height="26" rx="6" fill="var(--red)"/><path d="M-3-9h6v6h6v6h-6v6h-6v-6h-6v-6h6z" fill="#fff"/></g>`;
+  [[18,1],[W-30,1.2],[a.wings?W-60:70,.8]].forEach(([tx,sc])=>{s+=`<g transform="translate(${tx} ${G}) scale(${sc})"><rect x="-2" y="-14" width="4" height="14" fill="#7A5A3A"/><circle cy="-20" r="11" fill="var(--pts,#0E8A6A)"/></g>`});
+  return `<svg class="art" viewBox="0 0 ${W} 150" role="img" aria-label="Illustration of ${esc(h.name)}">${s}</svg>`;
+}
+function arrivalsTo(kind,id){return state.bookings.filter(b=>b.destKind===kind&&b.dest===id&&ACTIVE.includes(b.status)).length}
+function placeCard(h,kind,o={}){
+  const n=arrivalsTo(kind,h.id),vet=kind==="vet";
+  const icuFree=vet?null:Math.max(0,h.icu-Math.round(h.icu*.7)-n);
+  const stats=vet?[["Hours",h.hours.replace("Open ","")],[o.compact?"Wait":"Typical wait",h.wait+" min"],["Rating","★ "+h.rating.toFixed(1)]]
+                 :[[o.compact?"ICU free":"ICU beds free",icuFree+" of "+h.icu],["ER wait",h.wait+" min"],["Rating","★ "+h.rating.toFixed(1)]];
+  return `<article class="place card${o.sel?" sel":""}${o.compact?" compact":""}" ${o.pick?`data-place="${kind}:${h.id}"`:""}>
+    ${placeArt(h,kind)}
+    <div class="pin">
+      <div class="ptop"><h3>${esc(h.name)}</h3>${o.compact?"":`<span class="badge">${vet?(h.hours==="Open 24×7"?"24×7":"Vet clinic"):"24×7 emergency"}</span>`}</div>
+      <p class="parea">${esc(h.area)}${n?` · <strong>${n} arriving</strong>`:""}</p>
+      ${o.compact?"":`<p>${esc(h.about)}</p>`}
+      <dl class="pstats">${stats.map(([k,v])=>`<div><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join("")}</dl>
+      <p class="ptags">${(vet?h.specialties.map(x=>"Treats "+x.toLowerCase()):h.specialties).concat(o.compact?[]:h.facilities).map(t=>`<span class="tag">${esc(t)}</span>`).join("")}</p>
+      ${o.compact?"":`<p class="pphone">Emergency desk: ${esc(h.phone)} <span>(demo number)</span></p>`}
+      ${o.pick?`<button type="button" class="btn ${o.sel?"":"ghost"} sm" data-place="${kind}:${h.id}">${o.sel?"Showing arrivals":"Show arrivals"}</button>`:""}
+    </div>
+  </article>`;
+}
+
+/* ===== Map ===== */
+const ROADS=[["howrah","esplanade"],["esplanade","parkst"],["parkst","ballygunge"],["ballygunge","jadavpur"],["jadavpur","garia"],["behala","ballygunge"],["esplanade","saltlake"],["saltlake","newtown"],["saltlake","dumdum"],["dumdum","esplanade"],["parkst","saltlake"],["howrah","behala"]];
+const label=h=>h.lab==="l"?`<text x="-17" y="5" text-anchor="end">${h.map}</text>`:h.lab==="t"?`<text y="-17" text-anchor="middle">${h.map}</text>`:`<text y="27" text-anchor="middle">${h.map}</text>`;
+const PAW=`<circle cx="0" cy="2.5" r="3.6"/><circle cx="-4.4" cy="-2" r="1.9"/><circle cx="-1.5" cy="-4.8" r="1.9"/><circle cx="1.5" cy="-4.8" r="1.9"/><circle cx="4.4" cy="-2" r="1.9"/>`;
+function mapSVG(prefix,interactive){
+  const roads=ROADS.map(([a,b])=>{const[x1,y1]=P(area(a).x,area(a).y),[x2,y2]=P(area(b).x,area(b).y);return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="var(--road)" stroke-width="9" stroke-linecap="round"/>`}).join("");
+  const tab=(lbl)=>interactive?`tabindex="0" role="button" aria-label="${lbl}"`:"";
+  const areas=AREAS.map(a=>{const[x,y]=P(a.x,a.y);return `<g class="area" data-area="${a.id}" ${tab("Set pickup location: "+a.name)} transform="translate(${x} ${y})"><circle r="22" fill="transparent"/><circle class="adot" r="7" fill="var(--card)" stroke="var(--ink)" stroke-width="3"/><text y="-14" text-anchor="middle">${a.name}</text></g>`}).join("");
+  const hosps=HOSPITALS.map(h=>{const[x,y]=P(h.x,h.y);return `<g class="hosp" data-dest="${h.id}" data-kind="hosp" ${tab("Set hospital: "+h.name)} transform="translate(${x} ${y})"><rect x="-11" y="-11" width="22" height="22" rx="5" fill="var(--red)" stroke="var(--card)" stroke-width="2"/><path d="M-2.5-7h5v4.5h4.5v5h-4.5v4.5h-5v-4.5h-4.5v-5h4.5z" fill="#fff"/>${label(h)}</g>`}).join("");
+  const vets=VETS.map(h=>{const[x,y]=P(h.x,h.y);return `<g class="hosp" data-dest="${h.id}" data-kind="vet" ${tab("Set vet clinic: "+h.name)} transform="translate(${x} ${y})"><rect x="-11" y="-11" width="22" height="22" rx="11" fill="var(--vet)" stroke="var(--card)" stroke-width="2"/><g fill="#fff" transform="translate(0 1)">${PAW}</g>${label(h)}</g>`}).join("");
+  return `<svg class="map" viewBox="0 0 660 500" role="img" aria-label="Map of the city showing areas, hospitals, vet clinics and vehicles">
+    <rect width="660" height="500" fill="var(--land)"/>
+    <path d="M150 -10 C 120 80, 175 150, 140 230 S 90 360, 150 430 S 170 500, 150 520" fill="none" stroke="var(--river)" stroke-width="34" stroke-linecap="round"/>
+    <path d="M150 -10 C 120 80, 175 150, 140 230 S 90 360, 150 430 S 170 500, 150 520" fill="none" stroke="var(--riverline)" stroke-width="1.5" stroke-dasharray="6 8"/>
+    <text x="96" y="300" transform="rotate(-78 96 300)" style="fill:var(--riverline);font-size:12px;letter-spacing:.2em">HOOGHLY RIVER</text>
+    ${roads}<g id="${prefix}-route"></g>${areas}${hosps}${vets}<g id="${prefix}-veh"></g></svg>`;
+}
+$("#mapBook").innerHTML=mapSVG("mb",true);
+$("#mapOps").innerHTML=mapSVG("mo",false);
+$("#legend").innerHTML=[...["BLS","ALS","CCU","PET","BIKE"].map(k=>`<span><i class="sw" style="background:${TYPES[k].color}"></i>${TYPES[k].short}</span>`),
+  `<span><i class="sw" style="background:var(--red);border-radius:2px"></i>Hospital</span>`,`<span><i class="sw" style="background:var(--vet)"></i>Vet</span>`].join("");
+
+function glyph(t,c){
+  if(t==="PET")return `<g fill="${c}" transform="scale(.9)">${PAW}</g>`;
+  if(t==="BIKE")return `<g fill="none" stroke="${c}" stroke-width="2"><circle cx="-5" cy="3" r="3"/><circle cx="5" cy="3" r="3"/><path d="M-5 3l3-6h4l4 6M-1-3h-3"/></g>`;
+  return `<path d="M-7 3v-6h8l3 3v3z M-3-1h2v-2h1.5v2h2v1.5h-2v2h-1.5v-2h-2z" fill="${c}"/>`;
+}
+function vehicleSVG(a){const c=TYPES[a.type].color;return `<g class="vehicle" data-veh="${a.id}"><circle class="ring" r="${a.type==="BIKE"?11:13}" fill="var(--card)" stroke="${c}" stroke-width="3"/>${glyph(a.type,c)}<title>${esc(a.reg)} · ${TYPES[a.type].name}</title></g>`}
+function drawVehicles(){["mb","mo"].forEach(p=>{$(`#${p}-veh`).innerHTML=state.fleet.map(vehicleSVG).join("")});placeVehicles();}
+function placeVehicles(){
+  const now=Date.now(),sel=chosen?chosen.amb.id:null,selBike=chosen&&bikeOn&&bikeQuote?bikeQuote.amb.id:null;
+  state.fleet.forEach(a=>{const q=posOf(a,now),[x,y]=P(q.x,q.y);
+    document.querySelectorAll(`[data-veh="${a.id}"]`).forEach(g=>{
+      g.setAttribute("transform",`translate(${x} ${y})`);
+      const inBook=g.closest("#mb-veh"),relevant=!quoteIds||quoteIds.has(a.id)||(bikeQuote&&bikeQuote.amb.id===a.id)||tripFor(a.id,now);
+      g.classList.toggle("dim",!a.available||(inBook&&!relevant));
+      g.classList.toggle("sel",!!inBook&&(a.id===sel||a.id===selBike));
+    });});
+}
+
+/* ===== Booking form ===== */
+let trip=null,chosen=null,quoteIds=null,bikeQuote=null,bikeOn=false;
+const svcVal=()=>document.querySelector('input[name="svc"]:checked').value;
+const isPet=()=>svcVal()==="PET";
+$("#typeChips").innerHTML=[["ANY","Any ambulance",null],["BLS","Basic","var(--bls)"],["ALS","Advanced","var(--als)"],["CCU","Critical care","var(--ccu)"],["PET","Pet","var(--pet)"]]
+  .map(([v,l,c])=>`<input type="radio" name="svc" id="s-${v}" value="${v}" ${v==="ANY"?"checked":""}><label for="s-${v}">${c?`<i class="sw" style="background:${c}"></i>`:""}${l}</label>`).join("");
+$("#services").innerHTML=SERVICES.map(s=>`<button type="button" class="svc" data-svc="${s.k}" aria-pressed="false">
+  <span class="ic" style="background:${TYPES[s.k].color}"><svg width="28" height="28" viewBox="-9 -8 18 18" aria-hidden="true">${glyph(s.k,"#fff").replace(/var\(--bike\)/g,"#fff")}</svg></span>
+  <b>${s.title}</b><span>${s.text}</span><em>${s.from}</em></button>`).join("");
+const opts=items=>items.map(i=>`<option value="${i.id}">${esc(i.name)}</option>`).join("");
+$("#pickup").innerHTML=`<option value="">Choose area</option>`+opts(AREAS);
+$("#hospSel").innerHTML=`<optgroup label="Hospitals">${HOSPITALS.map(h=>`<option value="hosp:${h.id}">${esc(h.name)}</option>`).join("")}</optgroup><optgroup label="Vet clinics">${VETS.map(h=>`<option value="vet:${h.id}">${esc(h.name)}</option>`).join("")}</optgroup>`;
+function syncDest(keep){
+  const pet=isPet(),cur=$("#dest").value;
+  $("#dest").innerHTML=`<option value="">${pet?"Choose vet clinic":"Choose hospital"}</option>`+opts(pet?VETS:HOSPITALS);
+  if(keep&&[...$("#dest").options].some(o=>o.value===cur))$("#dest").value=cur;
+  $("#destLbl").textContent=pet?"Vet clinic":"Hospital";
+  $("#pickLbl").textContent=pet?"Pet's location":"Patient's location";
+  $("#destDot").className="dot "+(pet?"v":"h");
+  document.querySelectorAll(".svc").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.svc===svcVal()||(b.dataset.svc==="BIKE"&&bikeOn&&!pet))));
+}
+syncDest();
+function setService(v){$("#s-"+v).checked=true;syncDest(true);}
+document.querySelectorAll('input[name="svc"]').forEach(r=>r.addEventListener("change",()=>{syncDest(true);chosen=null;drawRoute();if(trip)search();}));
+document.querySelectorAll('input[name="when"]').forEach(r=>r.addEventListener("change",()=>$("#laterBox").hidden=!$("#wLater").checked));
+["#pickup","#dest"].forEach(s=>$(s).addEventListener("change",()=>{chosen=null;drawRoute()}));
+$("#services").addEventListener("click",e=>{
+  const k=e.target.closest("[data-svc]")?.dataset.svc;if(!k)return;
+  if(k==="BIKE"){bikeOn=true;if(isPet())setService("ANY");toast("A bike first responder will be offered with your ambulance.");}
+  else setService(k);
+  syncDest(true);
+  if(trip)search();else $("#pickup").focus();
+});
+
+function readTrip(){
+  const pickup=$("#pickup").value,d=$("#dest").value,svc=svcVal(),later=$("#wLater").checked,at=$("#whenAt").value;
+  let err="";
+  if(!pickup)err=isPet()?"Choose where the pet is.":"Choose the patient's location.";
+  else if(!d)err=isPet()?"Choose a vet clinic.":"Choose a hospital.";
+  else if(later&&!at)err="Pick a date and time, or choose Now.";
+  else if(later&&new Date(at)<new Date())err="That time has already passed.";
+  $("#formErr").textContent=err;
+  return err?null:{pickup,destKind:svc==="PET"?"vet":"hosp",dest:d,svc,when:later?at:"now"};
+}
+function search(){const t=readTrip();if(!t)return;trip=t;chosen=null;$("#tripForm").hidden=true;renderQuotes();drawRoute();}
+$("#tripForm").addEventListener("submit",e=>{e.preventDefault();search();});
+$("#changeTrip").addEventListener("click",()=>{$("#tripForm").hidden=false;$("#results").hidden=true;trip=null;chosen=null;quoteIds=null;bikeQuote=null;placeVehicles();drawRoute();$("#pickup").focus()});
+$("#sortBy").addEventListener("change",()=>trip&&renderQuotes());
+
+function quotes(){
+  const p=area(trip.pickup),h=placeOf(trip.destKind,trip.dest),k=km(p,h),now=Date.now();
+  const types=trip.svc==="ANY"?HUMAN:[trip.svc];
+  return state.fleet.filter(a=>a.available&&types.includes(a.type)&&!tripFor(a.id,now))
+    .map(a=>({amb:a,km:k,eta:mins(km(posOf(a,now),p)),fare:Math.round(a.base+a.perKm*k)}));
+}
+function nearestBike(){
+  if(!trip||trip.destKind==="vet"||trip.when!=="now")return null;
+  const p=area(trip.pickup),now=Date.now();
+  return state.fleet.filter(a=>a.type==="BIKE"&&a.available&&!tripFor(a.id,now))
+    .map(a=>({amb:a,eta:bikeMins(km(posOf(a,now),p))})).sort((a,b)=>a.eta-b.eta)[0]||null;
+}
+function renderQuotes(){
+  const q=quotes(),by=$("#sortBy").value;
+  q.sort((a,b)=>by==="fare"?a.fare-b.fare:by==="rating"?b.amb.rating-a.amb.rating:a.eta-b.eta);
+  quoteIds=new Set(q.map(x=>x.amb.id));
+  bikeQuote=nearestBike();
+  const fast=Math.min(...q.map(x=>x.eta)),cheap=Math.min(...q.map(x=>x.fare)),p=area(trip.pickup),h=placeOf(trip.destKind,trip.dest);
+  $("#results").hidden=false;
+  $("#resTitle").textContent=q.length?`${q.length} ${trip.svc==="PET"?"pet ambulance":"ambulance"}${q.length>1?"s":""} nearby`:"None free right now";
+  $("#tripLine").textContent=`${p.name} → ${h.name} · ${km(p,h).toFixed(1)} km · ${trip.when==="now"?"Now":fmt(trip.when)}`;
+  $("#bikeBox").innerHTML=bikeQuote&&q.length?`<div class="addon"><input type="checkbox" id="bikeChk" ${bikeOn?"checked":""}>
+    <div><label for="bikeChk">Add a bike first responder · +${rupees(BIKE_FARE)}</label>
+    <p>A paramedic on a motorbike reaches the patient in about <strong>${bikeQuote.eta} min</strong> and starts first aid while the ambulance is on its way.</p></div></div>`:"";
+  $("#qList").innerHTML=q.length?q.map(x=>`
+    <button type="button" class="q" data-pick="${x.amb.id}" aria-label="${TYPES[x.amb.type].name}, arrives in ${x.eta} minutes, ${rupees(x.fare)}">
+      <span class="eta"><b>${x.eta}</b><small>MIN AWAY</small></span>
+      <span>
+        <h3><i class="sw" style="background:${TYPES[x.amb.type].color}"></i>${TYPES[x.amb.type].name}${x.eta===fast?'<span class="badge">Fastest</span>':''}${x.fare===cheap&&q.length>1?'<span class="badge">Cheapest</span>':''}</h3>
+        <span class="meta">${esc(x.amb.operator)} · ★ ${x.amb.rating}</span>
+        <span class="kit" style="display:block">${esc(x.amb.kit)}</span>
+      </span>
+      <span class="fare"><b>${rupees(x.fare)}</b><span>${x.km.toFixed(1)} km trip</span></span>
+    </button>`).join(""):`<p class="empty">Every vehicle of this type is busy. Try another type${trip.svc==="PET"?"":", or call 108 in an emergency"}.</p>`;
+  placeVehicles();
+}
+$("#bikeBox").addEventListener("change",e=>{if(e.target.id==="bikeChk"){bikeOn=e.target.checked;syncDest(true);placeVehicles();}});
+
+function showDestInfo(){
+  const d=$("#dest").value,kind=isPet()?"vet":"hosp";
+  $("#destInfo").innerHTML=d?placeCard(placeOf(kind,d),kind,{compact:true}):"";
+}
+function drawRoute(){
+  showDestInfo();
+  const g=$("#mb-route");g.innerHTML="";
+  document.querySelectorAll("#mapBook .area,#mapBook .hosp").forEach(n=>n.classList.remove("on"));
+  const pk=$("#pickup").value,dd=$("#dest").value,kind=isPet()?"vet":"hosp";
+  AREAS.forEach(a=>$(`#mapBook [data-area="${a.id}"] .adot`).setAttribute("fill",a.id===pk?"var(--ink)":"var(--card)"));
+  if(pk){const a=area(pk),[x,y]=P(a.x,a.y);$(`#mapBook [data-area="${pk}"]`).classList.add("on");g.insertAdjacentHTML("beforeend",`<circle class="pulse" cx="${x}" cy="${y}" r="10" fill="var(--ink)"/>`);}
+  if(dd)$(`#mapBook [data-dest="${dd}"][data-kind="${kind}"]`)?.classList.add("on");
+  if(pk&&dd){const a=area(pk),h=placeOf(kind,dd),[x1,y1]=P(a.x,a.y),[x2,y2]=P(h.x,h.y);
+    g.insertAdjacentHTML("afterbegin",`<path class="route" d="M${x1} ${y1} Q ${(x1+x2)/2+20} ${(y1+y2)/2-30} ${x2} ${y2}"/>`);}
+  if(chosen&&pk){const a=area(pk),q=posOf(chosen.amb,Date.now()),[x1,y1]=P(q.x,q.y),[x2,y2]=P(a.x,a.y);
+    g.insertAdjacentHTML("afterbegin",`<line class="approach" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`);}
+  $("#mapNote").textContent=!pk?"Tap an area to set the pickup location.":!dd?(isPet()?"Now tap a vet clinic (orange circle).":"Now tap a hospital (red square), or a vet clinic for a pet."):"Route set. Choose a vehicle from the list.";
+}
+$("#mapBook").addEventListener("click",e=>{
+  const ar=e.target.closest("[data-area]"),ds=e.target.closest("[data-dest]");
+  if(ar)$("#pickup").value=ar.dataset.area;
+  else if(ds){const vet=ds.dataset.kind==="vet";if(vet!==isPet())setService(vet?"PET":"ANY");$("#dest").value=ds.dataset.dest;}
+  else return;
+  chosen=null;drawRoute();if($("#pickup").value&&$("#dest").value)search();
+});
+$("#mapBook").addEventListener("keydown",e=>{if((e.key==="Enter"||e.key===" ")&&e.target.closest("[data-area],[data-dest]")){e.preventDefault();e.target.dispatchEvent(new MouseEvent("click",{bubbles:true}))}});
+
+/* ===== Confirm ===== */
+$("#qList").addEventListener("mouseover",e=>{const id=e.target.closest("[data-pick]")?.dataset.pick;document.querySelectorAll("#mb-veh .vehicle").forEach(g=>g.classList.toggle("sel",g.dataset.veh===id))});
+$("#qList").addEventListener("mouseleave",()=>placeVehicles());
+$("#qList").addEventListener("click",e=>{
+  const id=e.target.closest("[data-pick]")?.dataset.pick;if(!id)return;
+  chosen=quotes().find(x=>x.amb.id===id);if(!chosen)return;
+  document.querySelectorAll(".q").forEach(b=>b.classList.toggle("sel",b.dataset.pick===id));
+  drawRoute();placeVehicles();
+  const pet=trip.destKind==="vet",p=area(trip.pickup),h=placeOf(trip.destKind,trip.dest),withBike=bikeOn&&bikeQuote&&!pet;
+  $("#dlgSum").innerHTML=`<dt>Route</dt><dd>${esc(p.name)} → ${esc(h.name)}</dd>
+    <dt>Vehicle</dt><dd>${TYPES[chosen.amb.type].name}<br><span style="font-weight:400">${esc(chosen.amb.operator)} · ${esc(chosen.amb.reg)}</span></dd>
+    ${withBike?`<dt>Bike responder</dt><dd>Arrives in about ${bikeQuote.eta} min</dd>`:""}
+    <dt>Arrives</dt><dd>${trip.when==="now"?"in about "+chosen.eta+" min":fmt(trip.when)}</dd>
+    <dt>Total fare</dt><dd>${rupees(chosen.fare+(withBike?BIKE_FARE:0))}</dd>`;
+  $("#nameLbl").textContent=pet?"Owner's name":"Patient name";
+  $("#petFields").hidden=!pet;$("#humanFields").hidden=pet;
+  $("#pNote").placeholder=pet?"For example: dog is scared of strangers":"For example: 3rd floor, no lift";
+  $("#dlgErr").textContent="";$("#dlg").showModal();$("#pName").focus();
+});
+$("#dlgBack").addEventListener("click",()=>$("#dlg").close());
+$("#dlgForm").addEventListener("submit",e=>{
+  e.preventDefault();
+  const pet=trip.destKind==="vet",name=$("#pName").value.trim(),phone=$("#pPhone").value.trim();
+  const err=name.length<2?(pet?"Enter the owner's name.":"Enter the patient's name."):!/^[6-9]\d{9}$/.test(phone)?"Enter a valid 10-digit Indian mobile number.":"";
+  $("#dlgErr").textContent=err;if(err)return;
+  const a=chosen.amb,p=area(trip.pickup),h=placeOf(trip.destKind,trip.dest),now=Date.now(),live=trip.when==="now";
+  const withBike=bikeOn&&bikeQuote&&!pet&&live;
+  const id="SC-"+Math.floor(5000+Math.random()*4999);
+  const anim=live?{t0:now,from:posOf(a,now),d0:2500,d1:Math.max(4000,chosen.eta*SPEED),d2:Math.max(5000,mins(km(p,h))*SPEED)}:null;
+  const b={id,created:new Date(now).toISOString(),patient:name,phone,condition:pet?"":$("#pCond").value,note:$("#pNote").value.trim(),
+    pickup:trip.pickup,destKind:trip.destKind,dest:trip.dest,type:a.type,amb:a.id,km:+chosen.km.toFixed(1),
+    fare:chosen.fare+(withBike?BIKE_FARE:0),eta:chosen.eta,when:trip.when,status:"Requested",anim,
+    bike:withBike?{amb:bikeQuote.amb.id,from:posOf(bikeQuote.amb,now),d1:Math.max(2500,bikeQuote.eta*SPEED),eta:bikeQuote.eta,arrived:false}:null,
+    pet:pet?{animal:$("#petType").value,size:$("#petSize").value}:null};
+  state.bookings.unshift(b);state.mine.unshift(id);save();
+  $("#dlg").close();["#pName","#pPhone","#pNote"].forEach(s=>$(s).value="");
+  toast(live?`${id} booked. Watch it on the map.`:`${id} scheduled.`);
+  chosen=null;renderQuotes();drawRoute();renderLists();
+  $("#mapBook").scrollIntoView({behavior:reduce?"auto":"smooth",block:"center"});
+});
+
+/* ===== Live updates ===== */
+function stepAnims(){
+  const now=Date.now();let changed=false;
+  state.bookings.forEach(b=>{
+    if(!b.anim||!ACTIVE.includes(b.status))return;
+    const t=now-b.anim.t0,{d0,d1,d2}=b.anim,p=area(b.pickup);
+    if(b.bike&&!b.bike.arrived&&t>=d0+b.bike.d1&&t<d0+d1){b.bike.arrived=true;changed=true;if(state.mine.includes(b.id))toast(`${b.id}: bike paramedic has reached the patient`);}
+    const s=t<d0?"Requested":t<d0+d1?"Assigned":t<d0+d1+d2?"On the way":"Completed";
+    if(s!==b.status){
+      if(b.bike&&s!=="Requested"&&s!=="Assigned"){const bk=state.fleet.find(f=>f.id===b.bike.amb);if(bk){bk.x=p.x;bk.y=p.y;}}
+      b.status=s;changed=true;
+      if(s==="Completed"){const a=state.fleet.find(f=>f.id===b.amb),h=dest(b);a.x=h.x;a.y=h.y;b.anim=null;}
+      if(state.mine.includes(b.id))toast(`${b.id}: ${s==="Assigned"?"crew assigned and driving to you":s==="On the way"?(b.pet?"pet picked up, heading to the vet":"patient picked up, heading to hospital"):"arrived safely"}`);
+    }
+  });
+  if(changed){save();renderLists();if(trip)renderQuotes();}
+  placeVehicles();
+  document.querySelectorAll("[data-live]").forEach(el=>{const b=state.bookings.find(x=>x.id===el.dataset.live);if(b)el.innerHTML=liveText(b)});
+}
+function liveText(b){
+  if(!b.anim)return "";
+  const t=Date.now()-b.anim.t0,{d0,d1,d2}=b.anim,m=v=>Math.max(1,Math.ceil(v/SPEED));
+  if(t<d0)return `<i></i>Finding the nearest crew…`;
+  if(t<d0+d1){
+    if(b.bike){const bt=d0+b.bike.d1;return t<bt?`<i></i>Bike paramedic in ${m(bt-t)} min · ambulance in ${m(d0+d1-t)} min`:`<i></i>Bike paramedic is with the patient · ambulance in ${m(d0+d1-t)} min`;}
+    return `<i></i>${b.pet?"Pet ambulance":"Ambulance"} arriving in ${m(d0+d1-t)} min`;
+  }
+  if(t<d0+d1+d2)return `<i></i>Reaching ${b.pet?"the vet":"hospital"} in ${m(d0+d1+d2-t)} min`;
+  return "";
+}
+
+/* ===== Lists ===== */
+const tag=s=>`<span class="status s-${s.replace(/ /g,"-")}">${s}</span>`;
+function card(b,o={}){
+  const a=state.fleet.find(f=>f.id===b.amb),p=area(b.pickup),h=dest(b),idx=STATUSES.indexOf(b.status);
+  const canCancel=o.mine&&(b.status==="Requested"||b.status==="Assigned");
+  const who=b.pet?`${esc(b.pet.animal)} (${esc(b.pet.size)}) · owner ${esc(b.patient)}`:`${esc(b.patient)}${b.condition?" · "+esc(b.condition):""}`;
+  return `<article class="card bk">
+    <div class="top"><h3>${esc(b.id)}</h3>${tag(b.status)}</div>
+    <p>${esc(p.name)} → ${esc(h.name)}</p>
+    <p>${TYPES[b.type].name}${b.bike?" + bike responder":""} · ${esc(a?a.reg:"")} · ${rupees(b.fare)}</p>
+    ${o.hosp?`<p><strong style="color:var(--ink)">${who}</strong>${b.note?` · “${esc(b.note)}”`:""}</p>`:""}
+    ${b.when!=="now"?`<p>Scheduled for ${fmt(b.when)}</p>`:""}
+    ${ACTIVE.includes(b.status)&&b.anim?`<div class="live" data-live="${b.id}">${liveText(b)}</div>`:""}
+    ${b.status!=="Cancelled"?`<div class="track">${STATUSES.map((s,i)=>`<div class="${i<=idx?"on":""}">${s}</div>`).join("")}</div>`:""}
+    ${canCancel?`<div class="acts"><button class="btn ghost sm" type="button" data-cancel="${b.id}">Cancel booking</button></div>`:""}
+  </article>`;
+}
+function renderLists(){
+  const mine=state.bookings.filter(b=>state.mine.includes(b.id));
+  $("#mine").innerHTML=mine.length?mine.map(b=>card(b,{mine:true})).join(""):`<p class="trip">No bookings yet. After you book, you can follow your ambulance live on the map.</p>`;
+  const [k,id]=$("#hospSel").value.split(":"),inc=state.bookings.filter(b=>b.destKind===k&&b.dest===id&&ACTIVE.includes(b.status)),pl=placeOf(k,id);
+  $("#placeDetail").innerHTML=placeCard(pl,k);
+  $("#incTitle").textContent=`Arriving at ${pl.map}`;
+  $("#incoming").innerHTML=inc.length?inc.map(b=>card(b,{hosp:true})).join(""):`<p class="trip">No arrivals on the way right now. Book a trip here from the Book tab to see it appear.</p>`;
+  $("#hospDir").innerHTML=HOSPITALS.map(h=>placeCard(h,"hosp",{compact:true,pick:true,sel:k==="hosp"&&h.id===id})).join("");
+  $("#vetDir").innerHTML=VETS.map(h=>placeCard(h,"vet",{compact:true,pick:true,sel:k==="vet"&&h.id===id})).join("");
+  if($("#destInfo"))showDestInfo();
+  renderOps();
+}
+$("#hospSel").addEventListener("change",renderLists);
+["#hospDir","#vetDir"].forEach(s=>$(s).addEventListener("click",e=>{const v=e.target.closest("button[data-place]")?.dataset.place;if(!v)return;$("#hospSel").value=v;renderLists();$("#view-hospital").scrollIntoView({behavior:reduce?"auto":"smooth"});}));
+$("#mine").addEventListener("click",e=>{
+  const id=e.target.closest("[data-cancel]")?.dataset.cancel;if(!id||!confirm("Cancel this booking?"))return;
+  const b=state.bookings.find(x=>x.id===id);freeze(b.amb);if(b.bike)freeze(b.bike.amb);
+  b.status="Cancelled";b.anim=null;save();renderLists();if(trip)renderQuotes();toast("Booking cancelled");
+});
+
+/* ===== Operator ===== */
+function renderOps(){
+  const B=state.bookings,now=Date.now(),act=B.filter(b=>ACTIVE.includes(b.status)).length,free=state.fleet.filter(a=>a.available&&!tripFor(a.id,now)).length;
+  $("#kpis").innerHTML=[["Bookings",B.length],["Active trips",act],["Free vehicles",`${free}/${state.fleet.length}`],["Revenue (completed)",rupees(B.filter(b=>b.status==="Completed").reduce((s,b)=>s+b.fare,0))]]
+    .map(([l,v])=>`<div class="card kpi"><span>${l}</span><b>${v}</b></div>`).join("");
+  $("#rows").innerHTML=B.map(b=>{const a=state.fleet.find(f=>f.id===b.amb);
+    return `<tr><td><strong>${esc(b.id)}</strong><br><small>${fmt(b.created)}</small></td><td>${b.pet?`${esc(b.pet.animal)}<br><small>Owner: ${esc(b.patient)}</small>`:`${esc(b.patient)}<br><small>${esc(b.condition)}</small>`}</td>
+    <td>${esc(area(b.pickup).name)} → ${esc(dest(b).name)}</td><td>${esc(a?a.reg:"")}<br><small>${TYPES[b.type].short}${b.bike?" + bike":""}</small></td><td>${rupees(b.fare)}</td>
+    <td><label class="sr" for="st-${b.id}">Status of ${esc(b.id)}</label><select id="st-${b.id}" data-status="${b.id}">${[...STATUSES,"Cancelled"].map(s=>`<option ${s===b.status?"selected":""}>${s}</option>`).join("")}</select></td></tr>`}).join("");
+  $("#fleet").innerHTML=state.fleet.map(a=>{const t=tripFor(a.id,now);
+    return `<div class="fl"><div><b><i class="sw" style="background:${TYPES[a.type].color}"></i>${esc(a.reg)}</b><small>${TYPES[a.type].short} · ${esc(a.operator)} · ${t?"On trip "+esc(t.id):a.available?"Free":"Off duty"}</small></div>
+    <label class="switch"><input type="checkbox" data-avail="${a.id}" ${a.available?"checked":""}>On duty</label></div>`}).join("");
+}
+$("#rows").addEventListener("change",e=>{const id=e.target.dataset.status;if(!id)return;
+  const b=state.bookings.find(x=>x.id===id);freeze(b.amb);if(b.bike)freeze(b.bike.amb);
+  b.anim=null;b.status=e.target.value;
+  if(b.status==="Completed"){const a=state.fleet.find(f=>f.id===b.amb),h=dest(b);a.x=h.x;a.y=h.y;}
+  save();renderLists();if(trip)renderQuotes();toast(`${id} set to ${b.status}`)});
+$("#fleet").addEventListener("change",e=>{const id=e.target.dataset.avail;if(!id)return;state.fleet.find(x=>x.id===id).available=e.target.checked;save();renderLists();if(trip)renderQuotes()});
+$("#resetBtn").addEventListener("click",()=>{if(!confirm("Reset all demo bookings and the fleet?"))return;state=seed();save();drawVehicles();renderLists();if(trip)renderQuotes();toast("Demo data reset")});
+
+/* ===== Views ===== */
+function show(v){
+  document.querySelectorAll(".roles button").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.view===v)));
+  ["book","hospital","ops"].forEach(x=>$("#view-"+x).hidden=x!==v);
+  history.replaceState(null,"","#"+v);
+}
+document.querySelector(".roles").addEventListener("click",e=>{const v=e.target.closest("[data-view]")?.dataset.view;if(v){show(v);scrollTo(0,0)}});
+
+drawVehicles();drawRoute();renderLists();
+const h0=location.hash.slice(1);if(["book","hospital","ops"].includes(h0))show(h0);
+setInterval(stepAnims,250);
+</script>
+</body>
+</html>
